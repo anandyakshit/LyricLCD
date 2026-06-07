@@ -117,6 +117,14 @@ def make_lcd_pages(text, width=16):
 
     return pages
 
+#song title screen
+
+def lcd_title(text):
+    if len(text) <= 11:
+        return text
+
+    return "Song:" + text[:8] + "__"
+
 #main
 
 async def main():
@@ -131,75 +139,98 @@ async def main():
     info = await current.try_get_media_properties_async()
     title = info.title
     artist = info.artist
+
     print(f"\nSong  : {title}")
     print(f"Artist: {artist}")
+
+    lyrics = []
+    last_packet = ""
+
+    # Initial lyric load
+    packet = lcd_title(title) + "|Lyrics Loading...\n"
+    srl.write(packet.encode("utf-8"))
+
     print("\nFetching lyrics...")
     lrc = fetch_lyrics(title, artist)
 
-    if not lrc:
+    if lrc:
+        lyrics = parse_lrc(lrc)
+        print(f"Loaded {len(lyrics)} lyric lines.\n")
+    else:
         print("No synced lyrics found.")
-        return
-    
-    lyrics = parse_lrc(lrc)
-    print(f"Loaded {len(lyrics)} lyric lines.\n")
-    last_packet = ""
+        packet = lcd_title(title) + "|Lyrics Not Avl.\n"
+        srl.write(packet.encode("utf-8"))
 
     while True:
 
         try:
-            
             new_info = await current.try_get_media_properties_async()
 
             if new_info.title != title or new_info.artist != artist:
-                  print("\nSong changed!")
-                  title = new_info.title
-                  artist = new_info.artist
-                  print(f"Song  : {title}")
-                  print(f"Artist: {artist}")
-                  lrc = fetch_lyrics(title, artist)
-                  if lrc:
-                     lyrics = parse_lrc(lrc)
-                     last_packet = ""
-                     print(f"Loaded {len(lyrics)} lyric lines.")
 
-                  else:
-                     print("No synced lyrics found.")
+                print("\nSong changed!")
+
+                title = new_info.title
+                artist = new_info.artist
+
+                print(f"Song  : {title}")
+                print(f"Artist: {artist}")
+
+                lyrics = []
+                last_packet = ""
+
+                packet = lcd_title(title) + "|Lyrics Loading...\n"
+                srl.write(packet.encode("utf-8"))
+
+                lrc = fetch_lyrics(title, artist)
+
+                if lrc:
+                    lyrics = parse_lrc(lrc)
+                    print(f"Loaded {len(lyrics)} lyric lines.")
+                else:
+                    print("No synced lyrics found.")
+                    packet = lcd_title(title) + "|Lyrics Not Avl.\n"
+                    srl.write(packet.encode("utf-8"))
 
             timeline = current.get_timeline_properties()
             elapsed = timeline.position.total_seconds() + Lyric_OffSet
-            line, current_time, next_time = get_current_lyric_info(lyrics, elapsed)
 
             mins = int(elapsed // 60)
             secs = int(elapsed % 60)
 
-            if line:
-                pages = make_lcd_pages(line)
+            if lyrics:
+                line, current_time, next_time = get_current_lyric_info(
+                    lyrics,
+                    elapsed
+                )
 
-                if pages:
-                    duration = next_time - current_time
-                    time_inside_line = elapsed - current_time
+                if line:
+                    pages = make_lcd_pages(line)
 
-                    page_duration = duration / len(pages)
+                    if pages:
+                        duration = next_time - current_time
+                        time_inside_line = elapsed - current_time
 
-                    page_index = int(time_inside_line // page_duration)
+                        page_duration = duration / len(pages)
+                        page_index = int(time_inside_line // page_duration)
 
-                    if page_index >= len(pages):
-                        page_index = len(pages) - 1
+                        if page_index >= len(pages):
+                            page_index = len(pages) - 1
 
-                    lcd_line1, lcd_line2 = pages[page_index]
+                        lcd_line1, lcd_line2 = pages[page_index]
 
-                    packet = lcd_line1 + "|" + lcd_line2 + "\n"
+                        packet = lcd_line1 + "|" + lcd_line2 + "\n"
 
-                    if packet != last_packet:
+                        if packet != last_packet:
+                            srl.write(packet.encode("utf-8"))
 
-                        srl.write(packet.encode("utf-8"))
+                            print(
+                                f"[{mins:02}:{secs:02}] "
+                                f"{lcd_line1} / {lcd_line2}"
+                            )
 
-                        print(
-                f"[{mins:02}:{secs:02}] "
-                f"{lcd_line1} / {lcd_line2}"
-            )
+                            last_packet = packet
 
-            last_packet = packet
             await asyncio.sleep(0.5)
 
         except KeyboardInterrupt:
@@ -209,7 +240,6 @@ async def main():
         except Exception as e:
             print("Error:", e)
             await asyncio.sleep(1)
-
 
 if __name__ == "__main__":
     asyncio.run(main())
