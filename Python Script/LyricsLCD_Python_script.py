@@ -4,10 +4,10 @@ import time
 import requests
 import serial
 from winsdk.windows.media.control import GlobalSystemMediaTransportControlsSessionManager as MediaManager
-
+port1 = input("Enter Port for Arduino (eg 'COM3'): ")
 #Variables
 Lyric_OffSet= 1.25
-srl=serial.Serial("COM3", 9600)
+srl=serial.Serial(port1, 9600)
 time.sleep(2) #relaxation time for arduino to accept serial data
 
 # LRCLIB
@@ -147,6 +147,23 @@ async def main():
     while True:
 
         try:
+            
+            new_info = await current.try_get_media_properties_async()
+
+            if new_info.title != title or new_info.artist != artist:
+                  print("\nSong changed!")
+                  title = new_info.title
+                  artist = new_info.artist
+                  print(f"Song  : {title}")
+                  print(f"Artist: {artist}")
+                  lrc = fetch_lyrics(title, artist)
+                  if lrc:
+                     lyrics = parse_lrc(lrc)
+                     last_packet = ""
+                     print(f"Loaded {len(lyrics)} lyric lines.")
+
+                  else:
+                     print("No synced lyrics found.")
 
             timeline = current.get_timeline_properties()
             elapsed = timeline.position.total_seconds() + Lyric_OffSet
