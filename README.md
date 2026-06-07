@@ -3,7 +3,7 @@
 This Project displays synchronized song lyrics from your PC on a 16x2 LCD using Arduino Uno R4 Minima and Python.
 
 Features:
-  1) Automatically detects what song is being played (for Spotify only).
+  1) Automatically detects what song is being played.
   2) Fetches the lyrics for the song automatically.
   3) Auto syncs the lyrics and the song.
   4) Displays the Lyrics on the 16x2 LCD.
@@ -16,12 +16,20 @@ Hardware Required:
 
 Software Required:
   1) Arduino IDE
-  2) Python (3.14.5 or above recommended to prevent compatibility issues)
-  3) Spotify Desktop App ( NOT Web Player)
+  2) Python (3.12 or any version that supports winsdk library)
+  3) Any music player that windows considers as a Media Session when opened.
+
+Python Libraries which require Installation:
+  1) winsdk
+  2) requests
+  3) pyserial
 
 Wiring:
-
-
+    I2C    |   Arduino 
+      VCC ----> 5V
+      GND ----> GND
+      SDA ----> A4
+      SCL ----> A5
 
 
 
