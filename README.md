@@ -25,11 +25,11 @@ Python Libraries which require Installation:
   3) pyserial
 
 Wiring:
-    I2C    |   Arduino 
-      VCC ----> 5V
-      GND ----> GND
-      SDA ----> A4
-      SCL ----> A5
+       I2C    |   Arduino 
+    1)   VCC ----> 5V
+    2)   GND ----> GND
+    3)   SDA ----> A4
+    4)   SCL ----> A5
 
 
 
